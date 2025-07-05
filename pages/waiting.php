@@ -37,7 +37,14 @@ if (isset($_GET['mark_paid'])) {
         echo '<div class="updated"><p>Status pembayaran ditandai manual!</p></div>';
     }
 }
-$waitings = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}mutasi_bca_waiting ORDER BY id DESC LIMIT 100");
+$setting = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}mutasi_bca_settings ORDER BY id DESC LIMIT 1");
+
+if ($setting && $setting->forms_id) {
+    require_once plugin_dir_path(__FILE__) . '../includes/waiting.php';
+    $waitings = mutasi_bca_get_waiting_candidates($wpdb, $setting->forms_id);
+} else {
+    $waitings = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}mutasi_bca_waiting ORDER BY id DESC LIMIT 100");
+}
 ?>
 <div class="wrap">
     <h1>Waiting List Mutasi</h1>
