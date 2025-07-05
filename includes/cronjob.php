@@ -54,6 +54,9 @@ foreach ($waiting_candidates as $w) {
     $waiting_map[$w->nominal][] = $w;
 }
 
+// Buat array waiting list untuk pencocokan nominal (pakai semua, bukan hanya key nominal)
+$waiting_list = $waiting_candidates;
+
 foreach ($data['data'] as $row) {
     $wpdb->insert($wpdb->prefix.'mutasi_bca_data', [
         'tanggal' => $row['tanggal'],
@@ -64,34 +67,32 @@ foreach ($data['data'] as $row) {
         'saldo' => $row['saldo']
     ]);
     // Trigger hanya untuk transaksi masuk (CR)
-    if ($row['tipe'] === 'CR' && isset($waiting_map[$row['mutasi']])) {
-        foreach ($waiting_map[$row['mutasi']] as $waiting) {
-            // Ambil data entry wpforms
-            $entry = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpforms_entries WHERE entry_id = %d", $waiting->entry_id));
-            if ($entry && strpos($entry->fields, 'antrian payment') !== false) {
-                // Update kolom fields: ganti value antrian payment menjadi keterangan mutasi
-                $fields = json_decode($entry->fields, true);
-                foreach ($fields as $fid => &$f) {
-                    if (isset($f['name']) && strtolower($f['name']) === 'status' && strtolower($f['value']) === 'antrian payment') {
-                        $f['value'] = $row['keterangan'];
+    if ($row['tipe'] === 'CR') {
+        foreach ($waiting_list as $waiting) {
+            if (function_exists('mutasi_bca_nominal_match') && mutasi_bca_nominal_match($waiting->nominal, $row['mutasi'])) {
+                $entry = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}wpforms_entries WHERE entry_id = %d", $waiting->entry_id));
+                if ($entry && strpos($entry->fields, 'antrian payment') !== false) {
+                    $fields = json_decode($entry->fields, true);
+                    foreach ($fields as $fid => &$f) {
+                        if (isset($f['name']) && strtolower($f['name']) === 'status' && strtolower($f['value']) === 'antrian payment') {
+                            $f['value'] = $row['keterangan'];
+                        }
                     }
+                    $fields_json = wp_json_encode($fields);
+                    $wpdb->update(
+                        $wpdb->prefix . 'wpforms_entries',
+                        ['fields' => $fields_json],
+                        ['entry_id' => $waiting->entry_id]
+                    );
+                    $wpdb->delete($wpdb->prefix.'mutasi_bca_waiting', ['id' => $waiting->id]);
+                    $wpdb->update($wpdb->prefix.'mutasi_bca_data', [
+                        'keterangan' => $row['keterangan'] . ' [TRIGGERED: entry_id ' . $waiting->entry_id . ']'
+                    ], [
+                        'tanggal' => $row['tanggal'],
+                        'mutasi' => $row['mutasi'],
+                        'tipe' => $row['tipe']
+                    ]);
                 }
-                $fields_json = wp_json_encode($fields);
-                $wpdb->update(
-                    $wpdb->prefix . 'wpforms_entries',
-                    ['fields' => $fields_json],
-                    ['entry_id' => $waiting->entry_id]
-                );
-                // Hapus dari waiting list
-                $wpdb->delete($wpdb->prefix.'mutasi_bca_waiting', ['id' => $waiting->id]);
-                // Tambahkan keterangan pada mutasi
-                $wpdb->update($wpdb->prefix.'mutasi_bca_data', [
-                    'keterangan' => $row['keterangan'] . ' [TRIGGERED: entry_id ' . $waiting->entry_id . ']'
-                ], [
-                    'tanggal' => $row['tanggal'],
-                    'mutasi' => $row['mutasi'],
-                    'tipe' => $row['tipe']
-                ]);
             }
         }
     }

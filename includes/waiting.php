@@ -35,3 +35,10 @@ function mutasi_bca_get_waiting_candidates($wpdb, $form_id) {
     ));
     return $results;
 }
+
+function mutasi_bca_nominal_match($waiting_nominal, $mutasi_nominal) {
+    // Hilangkan karakter selain angka dari kedua nominal
+    $waiting = preg_replace('/[^0-9]/', '', $waiting_nominal);
+    $mutasi = preg_replace('/[^0-9]/', '', $mutasi_nominal);
+    return ltrim($waiting, '0') === ltrim($mutasi, '0');
+}
