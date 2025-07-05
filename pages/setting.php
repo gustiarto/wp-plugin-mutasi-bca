@@ -10,8 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mutasi_bca_save_setti
     $user_id = sanitize_text_field($_POST['user_id']);
     $pin = sanitize_text_field($_POST['pin']);
     $bearer_token = sanitize_text_field($_POST['bearer_token']);
-    $forms_id = isset($_POST['forms_id']) ? intval($_POST['forms_id']) : null;
-    $field_status_id = isset($_POST['field_status_id']) ? intval($_POST['field_status_id']) : null;
+    $forms_id = isset($_POST['forms_id']) ? sanitize_text_field($_POST['forms_id']) : null;
+    $field_status_id = isset($_POST['field_status_id']) ? sanitize_text_field($_POST['field_status_id']) : null;
     $wpdb->insert($wpdb->prefix.'mutasi_bca_settings', [
         'endpoint' => $endpoint,
         'interval_time' => $interval_time,
