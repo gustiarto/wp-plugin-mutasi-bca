@@ -27,6 +27,7 @@ function mutasi_bca_get_waiting_by_nominal($nominal) {
 
 function mutasi_bca_get_waiting_candidates($wpdb, $form_id) {
     // Ambil entry_id dan nominal dari waiting list yang entry-nya di wpforms_entries kolom fields mengandung 'antrian payment'
-    $waiting = $wpdb->get_results($wpdb->prepare("SELECT w.* FROM {$wpdb->prefix}mutasi_bca_waiting w JOIN {$wpdb->prefix}wpforms_entries e ON w.entry_id = e.entry_id WHERE e.form_id = %d AND e.fields LIKE %s AND w.status = 'waiting'", $form_id, '%antrian payment%'));
+    $waiting = $wpdb->get_results($wpdb->prepare("SELECT w.* FROM {$wpdb->prefix}mutasi_bca_waiting w JOIN {$wpdb->prefix}wpforms_entries e ON w.entry_id = e.entry_id WHERE e.form_id = %d AND e.fields LIKE %s AND w.status = 'antrian payment'", $form_id, '%antrian payment%'));
+    echo $waiting;
     return $waiting;
 }
